@@ -1,4 +1,6 @@
 import numpy as np
+import tensorflow as tf
+
 
 # Fitzhugh-Nagumo vector field
 def vector_field(vw, a, b, tau, I):
@@ -8,48 +10,50 @@ def vector_field(vw, a, b, tau, I):
     vdot = v - 0.333*v*v*v - w + I
     wdot = (v + a - b*w)/tau
 
-    return vdot, wdot
+    return tf.constant([vdot, wdot])
+
 
 # Generate trajectory
 def simulate(initvw, eps, a, b, tau, noise_fcn, T):
 
-    # spike train is determined by which side of the nullcline the system is on
-    # return whether or not there is a spike and the potential
-    def test_w_nullcline(vw):
-        d = b*vw[0] - vw[1]
-        u = d - a
-        if d < 0:
-            return 0, d
-        else:
-            return 1, d
-
     # trajectory in 2D phase space
-    trajectory = np.zeros((T, 2))
-    trajectory[0] = np.array(initvw)
+    trajectory = tf.zeros((T, 2))
+    trajectory[0] = tf.constant(initvw)
 
-    # potential and spike train
-    spike_train = np.zeros(T)
-    potentials = np.zeros(T)
-    spike_train[0], potentials[0] = test_w_nullcline(trajectory[0])
+    # membrane potential is distance from w nullcline
+    potentials = tf.zeros(T)
 
     # Euler approximation
     for t in range(1, T):
         vw = trajectory[t - 1]
-        trajectory[t] = vw + eps*np.array(vector_field(vw, a, b, tau, noise_fcn()))
-        spike_train[t], potentials[t] = test_w_nullcline(trajectory[t])
+        trajectory[t] = vw + eps*vector_field(vw, a, b, tau, noise_fcn())
+        potentials[t] = b*trajectory[t, 0] - trajectory[t, 1] - a
 
-    # determine firing rate and the number of repeated fires
-    rate, n = 0, 0
-    rate += spike_train[0]
-    for i in range(1, T):
-        rate += spike_train[i]
-        n += spike_train[i]*spike_train[i - 1]
-    rate /= T
+    spike_train = 0.5 + 0.5*tf.sign(potentials)
 
-    spike_potentials = []
-    for v in potentials:
-        if v > 0:
-            spike_potentials.append(v)
-    v = np.std(spike_potentials)
+    return trajectory, potentials, spike_train
 
-    return trajectory, spike_train, rate, n, v
+
+# approximating firing rate, number of consecutive fires, and variance of hyper-theshold potential
+# by assuming the step function for getting the spike train is a steep sigmoid
+def metrics(potentials):
+
+    T = len(potentials)
+
+    spike_train_approx = tf.sigmoid(64*potentials)
+
+    # always assuming that a time step is 1 millisecond
+    count = tf.sum(spike_train_approx)
+    rate = 1000*count/T
+
+    repeats = tf.constant([0])
+
+    for t in range(1, T):
+        repeats += spike_train_approx[t]*spike_train_approx[t - 1]
+
+    pos = tf.relu(potentials)
+    mean = tf.sum(pos)/count
+    shifted = potentials - mean
+    var = tf.sum(shifted*shifted)/(count - 1)
+
+    return rate, repeats, var
