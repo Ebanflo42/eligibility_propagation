@@ -106,8 +106,7 @@ def generate_click_task_data(batch_size, seq_len, n_neuron, recall_duration, p_g
 
 
 # raster plot
-def update_plot(plot_result_values, ax_list, plot_traces=False, batch=0, n_max_neuron_per_raster=10, title=None,
-                eps_sel=None, trace_sel=None):
+def update_plot(plot_result_values, ax_list, plot_traces=False, batch=0, n_max_neuron_per_raster=10, title=None, eps_sel=None, trace_sel=None, matrix=None):
     """
     This function iterates the matplotlib figure on every call.
     It plots the data for a fixed sequence that should be representative of the expected computation
@@ -245,6 +244,11 @@ def update_plot(plot_result_values, ax_list, plot_traces=False, batch=0, n_max_n
         #ax.set_xticks([0, 500, 1000, 1500, 2000])
 
         ax.set_ylabel('slow factor')
+
+    # plot matrix on the last axes if it is available
+    if matrix is not None:
+        print(matrix.shape)
+        ax_list[-1].pcolor(matrix)
 
     ax.set_xlabel('Time in ms')
 

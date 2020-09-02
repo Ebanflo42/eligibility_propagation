@@ -20,7 +20,7 @@ tf.app.flags.DEFINE_integer('n_batch', 64, 'batch size')
 tf.app.flags.DEFINE_integer('n_iter', 2000, 'total number of iterations')
 tf.app.flags.DEFINE_float('learning_rate', 0.005, 'Base learning rate.')
 tf.app.flags.DEFINE_float('stop_crit', 0.07, 'Stopping criterion. Stops training if error goes below this value')
-tf.app.flags.DEFINE_integer('print_every', 20, 'Print every')
+tf.app.flags.DEFINE_integer('print_every', 5, 'Print every')
 tf.app.flags.DEFINE_integer('validate_every', 10, 'validate every')
 
 # training algorithm
@@ -35,8 +35,8 @@ tf.app.flags.DEFINE_float('tau_a', 2000, 'model alpha - threshold decay [ms]')
 tf.app.flags.DEFINE_float('thr', 0.6, 'threshold at which the LSNN neurons spike')
 tf.app.flags.DEFINE_float('tau_v', 20, 'tau for filtered_z decay in LSNN  neurons [ms]')
 tf.app.flags.DEFINE_float('tau_out', 20, 'tau for filtered_z decay in output neurons [ms]')
-tf.app.flags.DEFINE_float('reg_f', 2, 'regularization coefficient for firing rate')
-tf.app.flags.DEFINE_integer('reg_rate', 10, 'target firing rate for regularization [Hz]')
+tf.app.flags.DEFINE_float('reg_f', 4, 'regularization coefficient for firing rate')
+tf.app.flags.DEFINE_integer('reg_rate', 8, 'target firing rate for regularization [Hz]')
 tf.app.flags.DEFINE_integer('n_ref', 5, 'Number of refractory steps [ms]')
 tf.app.flags.DEFINE_integer('dt', 1, 'Simulation time step [ms]')
 tf.app.flags.DEFINE_float('dampening_factor', 0.3, 'factor that controls amplitude of pseudoderivative')
@@ -44,6 +44,9 @@ tf.app.flags.DEFINE_float('dampening_factor', 0.3, 'factor that controls amplitu
 # other settings
 tf.app.flags.DEFINE_bool('do_plot', True, 'Perform plots')
 tf.app.flags.DEFINE_bool('device_placement', False, '')
+
+# allows use to numpy tensors
+#tf.enable_eager_execution()
 
 assert FLAGS.eprop_impl in ['autodiff', 'hardcoded']
 assert FLAGS.feedback in ['random', 'symmetric']
@@ -229,7 +232,7 @@ if FLAGS.do_plot:
         # plot learning signal and traces - only works in hardcoded mode!
         n_subplots = 7 - int(n_regular == 0) - int(n_adaptive == 0)
     else:
-        n_subplots = 4
+        n_subplots = 5
     fig, ax_list = plt.subplots(n_subplots, figsize=(5.9, 6))
     # re-name the window with the name of the cluster to track relate to the terminal window
     fig.canvas.set_window_title(socket.gethostname())
@@ -325,7 +328,7 @@ for k_iter in range(FLAGS.n_iter):
 
             plot_trace = True if FLAGS.eprop_impl == 'hardcoded' else False
             update_plot(plot_results_values, ax_list, plot_traces=plot_trace, n_max_neuron_per_raster=16,
-                        title='Training at iteration ' + str(k_iter))
+                        title='Training at iteration ' + str(k_iter), matrix=tf.convert_to_tensor(cell.w_rec_var).numpy())
 
             plt.draw()
             plt.pause(1)
@@ -383,7 +386,7 @@ for i in range(4):
 
     if FLAGS.do_plot:
         update_plot(plot_results_values, ax_list, n_max_neuron_per_raster=16,
-                    title='Training at iteration ' + str(k_iter))
+                    title='Training at iteration ' + str(k_iter), matrix=tf.convert_to_tensor(cell.w_rec_var).numpy())
         plt.draw()
         plt.pause(1)
 
