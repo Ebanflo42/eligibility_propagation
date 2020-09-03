@@ -232,8 +232,8 @@ if FLAGS.do_plot:
         # plot learning signal and traces - only works in hardcoded mode!
         n_subplots = 7 - int(n_regular == 0) - int(n_adaptive == 0)
     else:
-        n_subplots = 5
-    fig, ax_list = plt.subplots(n_subplots, figsize=(5.9, 6))
+        n_subplots = 7
+    fig, ax_list = plt.subplots(n_subplots, figsize=(12, 6))
     # re-name the window with the name of the cluster to track relate to the terminal window
     fig.canvas.set_window_title(socket.gethostname())
 
@@ -328,7 +328,7 @@ for k_iter in range(FLAGS.n_iter):
 
             plot_trace = True if FLAGS.eprop_impl == 'hardcoded' else False
             update_plot(plot_results_values, ax_list, plot_traces=plot_trace, n_max_neuron_per_raster=16,
-                        title='Training at iteration ' + str(k_iter), matrix=tf.convert_to_tensor(cell.w_rec_var).numpy())
+                        title='Training at iteration ' + str(k_iter), in_weights=sess.run(cell.w_in_var), hid_weights=sess.run(cell.w_rec_var), out_weights=sess.run(W_out))
 
             plt.draw()
             plt.pause(1)
@@ -386,7 +386,7 @@ for i in range(4):
 
     if FLAGS.do_plot:
         update_plot(plot_results_values, ax_list, n_max_neuron_per_raster=16,
-                    title='Training at iteration ' + str(k_iter), matrix=tf.convert_to_tensor(cell.w_rec_var).numpy())
+                    title='Training at iteration ' + str(k_iter), matrix=sess.run(cell.w_rec_var))
         plt.draw()
         plt.pause(1)
 
